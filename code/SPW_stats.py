@@ -2,9 +2,9 @@
 
 import numpy as np
 import matplotlib.pyplot as plt
+import scipy.stats
 
-thres = 19  # Hz
-# 19 Hz to see real event duration
+thres = 15  # Hz
 dt = 0.0001  # sec
 
 fr = np.load('fr.npz')
@@ -16,6 +16,7 @@ time = fr['time']
 fig,ax = plt.subplots(3,1,figsize=(10,15))
 ax[0].plot(time,fr_P)
 ax[0].set_ylabel('Freq (Hz)')
+#ax[0].set_xlabel('time (sec)')
 ax[0].set_title('Firing Rate of P cells')
 #ax[0].set_xlim([25,30])
 
@@ -27,6 +28,7 @@ ax[2].plot(time,fr_B)
 ax[2].set_xlabel('time (sec)')
 ax[2].set_ylabel('Freq (Hz)')
 ax[2].set_title('Firing Rate of B cells')
+
 plt.show()
 
 start = np.zeros(time.size, dtype=bool)
@@ -73,6 +75,7 @@ ax[0].hist(ISI, bins=np.linspace(0, max(ISI), 100),normed='True')
 ax[0].set_xlabel('Interspike interval (sec)')
 ax[0].set_title('ISI distribution')
 
+
 ax[1].hist(peaks, bins=np.linspace(min(peaks), max(peaks), 100),normed='True')
 ax[1].set_xlabel('Peak value (Hz)')
 ax[1].set_title('Peak value distribution')
@@ -81,4 +84,21 @@ ax[2].hist(duration, bins=np.linspace(min(duration), max(duration), 100),normed=
 ax[2].set_xlabel('Event duration (sec)')
 ax[2].set_title('Event duration distribution')
 
+plt.show()
+
+# fit distributions
+
+x = np.arange(0,15,.1)
+size = len(x)
+h = plt.hist(fr_P, bins=range(50), color='w')
+
+dist_names = ['gamma', 'lognorm', 'weibull', 'norm', 'pareto']
+
+for dist_name in dist_names:
+    dist = getattr(stats, dist_name)
+    param = dist.fit(y)
+    pdf_fitted = dist.pdf(x, *param[:-2], loc=param[-2], scale=param[-1]) * size
+    plt.plot(pdf_fitted, label=dist_name)
+    plt.xlim(0,15)
+plt.legend(loc='upper right')
 plt.show()
