@@ -3,8 +3,10 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import scipy.stats
+from scipy.stats.stats import pearsonr
+from scipy import signal
 
-thres = 15  # Hz
+thres = 15   # Hz
 dt = 0.0001  # sec
 
 fr = np.load('fr.npz')
@@ -63,18 +65,33 @@ for i in range(time_s.size):
     peaks[i] = max(fr_P[int(time_s[i]/dt):int(time_e[i]/dt+1)])
     time_peak[i] = np.argmax(fr_P[int(time_s[i]/dt):int(time_e[i]/dt+1)])*dt
 
-time_peak += time_s 
+time_peak += time_s
+duration = time_e - time_s
+
+# throw away problematic measurements
+
+mask = np.ones(len(peaks), dtype=bool)
+# fluctuations in the firing rate values cause the FR to go up and down 15 Hz
+# while ascending 
+mask[peaks<20] = False
+# some events can happen before the previous event has terminated if the overall
+# activity is too high
+mask[duration>0.45] = False
+peaks = peaks[mask]
+time_s = time_s[mask]
+time_e = time_e[mask]
+time_peak = time_peak[mask]
+duration = duration[mask]
 
 # time differences
 ISI = [time_peak[i] - time_peak[i -1] for i in range(len(time_peak))]
-duration = time_e - time_s
+ISI = ISI[1:]
 
 fig,ax = plt.subplots(1,3,figsize=(15,5))
 
 ax[0].hist(ISI, bins=np.linspace(0, max(ISI), 100),normed='True')
 ax[0].set_xlabel('Interspike interval (sec)')
 ax[0].set_title('ISI distribution')
-
 
 ax[1].hist(peaks, bins=np.linspace(min(peaks), max(peaks), 100),normed='True')
 ax[1].set_xlabel('Peak value (Hz)')
@@ -86,19 +103,40 @@ ax[2].set_title('Event duration distribution')
 
 plt.show()
 
-# fit distributions
+# find correlations
 
+dur_amp = pearsonr(duration,peaks)
+ISIlag_dur = pearsonr(ISI,duration[0:len(duration)-1])
+ISI_durlag = pearsonr(ISI,duration[1:])
+ISIlag_amp = pearsonr(ISI,peaks[0:len(duration)-1])
+ISI_amplag = pearsonr(ISI,peaks[1:])
+
+# power spectral density of event occurences
+
+time = np.round(np.arange(0,3000,.1),1)
+events = np.asarray([i in np.round(time_peak,1) and 1 or 0 for i in time], dtype='float')
+f, Pxx_den = signal.periodogram(events, 10**4)
+plt.semilogy(f, Pxx_den)
+plt.ylim([1e-10, 1e-4])
+plt.xlim([0, 1e2])
+plt.xlabel('frequency [Hz]')
+plt.ylabel('Spectral density [1/Hz]')
+plt.show()
+
+'''
+# fit distributions
 x = np.arange(0,15,.1)
 size = len(x)
 h = plt.hist(fr_P, bins=range(50), color='w')
 
-dist_names = ['gamma', 'lognorm', 'weibull', 'norm', 'pareto']
+dist_names = ['gamma', 'lognorm', 'weibull_max', 'norm', 'pareto']
 
 for dist_name in dist_names:
-    dist = getattr(stats, dist_name)
-    param = dist.fit(y)
+    dist = getattr(scipy.stats, dist_name)
+    param = dist.fit(ISI)
     pdf_fitted = dist.pdf(x, *param[:-2], loc=param[-2], scale=param[-1]) * size
     plt.plot(pdf_fitted, label=dist_name)
     plt.xlim(0,15)
 plt.legend(loc='upper right')
 plt.show()
+'''
