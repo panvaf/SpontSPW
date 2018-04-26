@@ -58,6 +58,7 @@ for i in range(time.size):
 # event times
 time_s = time[start]
 time_e = time[end]
+del start, end
 time_peak = np.zeros(time_s.size)
 peaks = np.zeros(time_s.size)
 
@@ -84,14 +85,14 @@ time_peak = time_peak[mask]
 duration = duration[mask]
 
 # time differences
-ISI = [time_peak[i] - time_peak[i -1] for i in range(len(time_peak))]
-ISI = ISI[1:]
+IEI = [time_peak[i] - time_peak[i -1] for i in range(len(time_peak))]
+IEI = np.asarray(IEI[1:])
 
 fig,ax = plt.subplots(1,3,figsize=(15,5))
 
-ax[0].hist(ISI, bins=np.linspace(0, max(ISI), 100),normed='True')
-ax[0].set_xlabel('Interspike interval (sec)')
-ax[0].set_title('ISI distribution')
+ax[0].hist(IEI, bins=np.linspace(0, max(IEI), 100),normed='True')
+ax[0].set_xlabel('Inter-event interval (sec)')
+ax[0].set_title('IEI distribution')
 
 ax[1].hist(peaks, bins=np.linspace(min(peaks), max(peaks), 100),normed='True')
 ax[1].set_xlabel('Peak value (Hz)')
@@ -106,16 +107,17 @@ plt.show()
 # find correlations
 
 dur_amp = pearsonr(duration,peaks)
-ISIlag_dur = pearsonr(ISI,duration[0:len(duration)-1])
-ISI_durlag = pearsonr(ISI,duration[1:])
-ISIlag_amp = pearsonr(ISI,peaks[0:len(duration)-1])
-ISI_amplag = pearsonr(ISI,peaks[1:])
+IEIlag_dur = pearsonr(IEI,duration[0:len(duration)-1])
+IEI_durlag = pearsonr(IEI,duration[1:])
+IEIlag_amp = pearsonr(IEI,peaks[0:len(duration)-1])
+IEI_amplag = pearsonr(IEI,peaks[1:])
 
 # power spectral density of event occurences
 
 time = np.round(np.arange(0,3000,.1),1)
 events = np.asarray([i in np.round(time_peak,1) and 1 or 0 for i in time], dtype='float')
 f, Pxx_den = signal.periodogram(events, 10**4)
+
 plt.semilogy(f, Pxx_den)
 plt.ylim([1e-10, 1e-4])
 plt.xlim([0, 1e2])
@@ -123,20 +125,20 @@ plt.xlabel('frequency [Hz]')
 plt.ylabel('Spectral density [1/Hz]')
 plt.show()
 
-'''
 # fit distributions
-x = np.arange(0,15,.1)
+x = np.arange(0,40,.1)
 size = len(x)
-h = plt.hist(fr_P, bins=range(50), color='w')
+h = plt.hist(IEI, bins=np.linspace(0, max(IEI), 100), normed = 'True')
 
-dist_names = ['gamma', 'lognorm', 'weibull_max', 'norm', 'pareto']
+dist_names = ['gamma', 'lognorm', 'fisk', 'weibull_min']
 
 for dist_name in dist_names:
     dist = getattr(scipy.stats, dist_name)
-    param = dist.fit(ISI)
-    pdf_fitted = dist.pdf(x, *param[:-2], loc=param[-2], scale=param[-1]) * size
-    plt.plot(pdf_fitted, label=dist_name)
-    plt.xlim(0,15)
+    param = dist.fit(IEI[IEI<15])
+    pdf_fitted = dist.pdf(x, *param[:-2], loc=param[-2], scale=param[-1])
+    plt.plot(x,pdf_fitted, label=dist_name)
+plt.xlim(0,40)
 plt.legend(loc='upper right')
+plt.xlabel('Inter-event interval (sec)')
+plt.title('IEI distribution fitting')
 plt.show()
-'''
