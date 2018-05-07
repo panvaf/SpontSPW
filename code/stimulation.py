@@ -48,12 +48,18 @@ measure_time = 5*second
 Ip = 0*pA              # stimulation currents
 Ib = 0*pA
 Is = 0*pA
-stim_dur = 100*ms     # stimulation duration
-eta = .05             # percentage of cells stimulated
+stim_dur = 20*ms     # stimulation duration
+eta = .02             # percentage of cells stimulated
 
-# B cells: 90 nA, 100 mS, eta = .3
-# P cells: 200 nA, 100 mS, eta = .05
-# S cells: -140 nA, 100 mS, eta = .3 Here transient synchronicity is inevitable
+# B cells: 90 nA, 100 ms, eta = .3
+# P cells: 200 nA, 100 ms, eta = .05
+# S cells: -140 nA, 100 ms, eta = .3 Here transient synchronicity is inevitable
+
+# shorter stimulation duration
+# really difficult to avoid synchronicity effects when using unimodal currents
+# P cells: 850 nA, 20 ms, eta = .02, jumps a lot over. completely random. sometimes nothing,sometimes synchronous, sometimes switch
+# 
+# 
 
 # avoiding synchonicity can be quite tricky. sometimes it does not elicit, sometimes
 # in has quite a lot of synchonicity when you stimulate (its natural and inevitable, also expected, if it leaves afterwards its ok)
@@ -61,7 +67,7 @@ eta = .05             # percentage of cells stimulated
 # Depression mechanisms
 
 tauD = 100*ms      # Time constant of synaptic depression
-delta = 0.025      # strength of depression
+delta = 0.01      # strength of depression
 # 100, 0.2, 1, .6
 # 150, 0.1, 1, .6 gg
 # 100, 0.1, 1.05, .65
@@ -183,7 +189,7 @@ FR_B = PopulationRateMonitor(B)
 net = Network(collect())
 net.run(runinit, report = 'text')
 
-Ip = 200*pA
+Ip = 850*pA
 net.run(stim_dur, report = 'text')  
 
 Ip = 0*pA

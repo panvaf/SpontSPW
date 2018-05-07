@@ -38,7 +38,7 @@ epsilon = 0.08       # Probability of any connection
 # Depression mechanisms
 
 tauD = 100*ms      # Time constant of synaptic depression
-delta = 0.1        # strength of depression
+delta = 0.25        # strength of depression
 # 100, 0.2, 1, .6
 # 150, 0.1, 1, .6 gg
 # 100, 0.1, 1.05, .65
@@ -47,10 +47,11 @@ delta = 0.1        # strength of depression
 # and also 150,0.08,0.65,1.05 aproximately 300 ms for the whole event, near the to for 100 ms for both
 # nice in-between states: 92,0.1,0.65,1.05
 # deterministic (kinda): 1000, 0.01, 0.65,1.05
+# target for mean(IEI) =  0.9651 sec
 
 # Simulation parameters
 
-runtime = 5*second     # Running time (neuron time)
+runtime = 30*second     # Running time (neuron time)
 trec = 100*ms           # Time window to measure spikes
 FR_width = 50.1*ms      # Window for smoothing firing rates
 record_neurons = 100    # To compute correlation
@@ -92,7 +93,7 @@ P_to_S = Synapses(P,S,delay=delay,on_pre='gP += .1*nS')
 
 # new synapses
 S_to_B = Synapses(S,B,delay=delay,on_pre='gS += .65*nS')
-B_to_S = Synapses(B,S,syn_dep,delay=delay,on_pre='''gB += D*1.05*nS
+B_to_S = Synapses(B,S,syn_dep,delay=delay,on_pre='''gB += D*1.2*nS
                   D = clip(D - delta*D,0,1)''')
 
 # implement connectivity
@@ -181,7 +182,7 @@ fr_P = FR_P.smooth_rate(window = 'flat',width=FR_width)/Hz
 fr_B = FR_B.smooth_rate(window = 'flat',width=FR_width)/Hz
 fr_S = FR_S.smooth_rate(window = 'flat',width=FR_width)/Hz
 time = FR_P.t/ms/1000
-np.savez('fr',fr_P=fr_P,fr_S=fr_S,fr_B=fr_B,time=time)
+np.savez('fr_test',fr_P=fr_P,fr_S=fr_S,fr_B=fr_B,time=time)
 
 '''
 # compute measures of synchronicity and regularity

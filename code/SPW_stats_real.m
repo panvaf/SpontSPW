@@ -63,3 +63,27 @@ semilogy(F,Pxx)
 xlabel('Frequency [Hz]')
 ylabel('Spectral density [1/Hz]')
 title('Event spectral density')
+
+% find correlations between IEI and SPW amplitudes
+
+load('amp_times.mat')
+ends = cumsum(trials);
+num = size(trials,2);
+amp_IEIbef = zeros(num,1);
+ampbef_IEI = zeros(num,1);
+
+for i=1:num
+    amp = amplitudes(ends(i)-trials(i)+1:ends(i));
+    time_temp = times(ends(i)-trials(i)+1:ends(i));
+    IEI = diff(time_temp);
+    ampbef_IEI(i) = corr(IEI',amp(1:end-1)');
+    amp_IEIbef(i) = corr(IEI',amp(2:end)');
+end
+
+figure
+histogram(ampbef_IEI,10,'Normalization','pdf')
+title('Correlation between amplitude of Event and next IEI in different slices')
+
+figure
+histogram(amp_IEIbef,10,'Normalization','pdf')
+title('Correlation between IEI and amplitude of next Event in different slices')
