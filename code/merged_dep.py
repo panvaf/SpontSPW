@@ -4,6 +4,7 @@ import sys
 import utilities as util
 import matplotlib.pyplot as plt
 import numpy as np
+import random as rd
 from brian2 import *
 start_scope()
 
@@ -37,8 +38,8 @@ epsilon = 0.08       # Probability of any connection
 
 # Depression mechanisms
 
-tauD = 100*ms      # Time constant of synaptic depression
-delta = 0.25        # strength of depression
+tauD = 230*ms      # Time constant of synaptic depression
+delta = 0.12       # strength of depression
 # 100, 0.2, 1, .6
 # 150, 0.1, 1, .6 gg
 # 100, 0.1, 1.05, .65
@@ -49,6 +50,11 @@ delta = 0.25        # strength of depression
 # deterministic (kinda): 1000, 0.01, 0.65,1.05
 # target for mean(IEI) =  0.9651 sec
 
+# try this: 0.25, 1.2, 100
+# .3, 1.15, 50 nice, still 150 ms
+
+# i think i found the perfect parameters: 230, .12, 1.22, 0.65 yields mean IEI of 0.86 ms
+
 # Simulation parameters
 
 runtime = 30*second     # Running time (neuron time)
@@ -56,6 +62,8 @@ trec = 100*ms           # Time window to measure spikes
 FR_width = 50.1*ms      # Window for smoothing firing rates
 record_neurons = 100    # To compute correlation
 measure_time = 5*second # Window to compute measures
+num = 1000              # Number of D variables recorded
+rec_D = False
 
 # Define equations
 
@@ -72,7 +80,10 @@ inh_plast = 'W : 1'
 
 # define depression mechanisms
 
-syn_dep = 'dD/dt = (1 - D)/tauD : 1 (event-driven)'
+if rec_D:
+    syn_dep = 'dD/dt = (1 - D)/tauD : 1 (clock-driven)'
+else:
+    syn_dep = 'dD/dt = (1 - D)/tauD : 1 (event-driven)'
 
 # implement neurons
 
@@ -89,11 +100,11 @@ S_to_S = Synapses(S,S,delay=delay,on_pre='gS += .4*nS')
 B_to_B = Synapses(B,B,delay=delay,on_pre='gB += .4*nS')
 P_to_P = Synapses(P,P,delay=delay,on_pre='gP += .1*nS')
 P_to_B = Synapses(P,B,delay=delay,on_pre='gP += .1*nS')
-P_to_S = Synapses(P,S,delay=delay,on_pre='gP += .1*nS')
+P_to_S = Synapses(P,S,delay=delay,on_pre='gP += .1*nS') 
 
 # new synapses
 S_to_B = Synapses(S,B,delay=delay,on_pre='gS += .65*nS')
-B_to_S = Synapses(B,S,syn_dep,delay=delay,on_pre='''gB += D*1.2*nS
+B_to_S = Synapses(B,S,syn_dep,delay=delay,on_pre='''gB += D*1.22*nS
                   D = clip(D - delta*D,0,1)''')
 
 # implement connectivity
@@ -144,31 +155,33 @@ plt.show()
 
 # run simulation
 
+if rec_D:
+    index = rd.sample(range(0,len(B_to_S.i)), num)
+    syn = StateMonitor(B_to_S,'D',index)
 spikes = SpikeMonitor(neurons, record = 'True')
 FR_P = PopulationRateMonitor(neurons[:N_P])
 FR_S = PopulationRateMonitor(neurons[N_P:N_P+N_S])
 FR_B = PopulationRateMonitor(neurons[N_P+N_S:])
 
+
 net = Network(collect())
 net.run(runtime+trec, report = 'text')
 
-fig,ax = plt.subplots(4,1,figsize=(10,15))
-ax[0].plot(FR_P.t/ms/1000/60, FR_P.smooth_rate(window = 'flat',width=FR_width)/Hz)
-ax[0].set_xlabel('time (min)')
+fig,ax = plt.subplots(4,1,figsize=(14,20))
+ax[0].plot(FR_P.t/ms/1000, FR_P.smooth_rate(window = 'flat',width=FR_width)/Hz)
 ax[0].set_ylabel('Freq (Hz)')
-#ax[0].set_ylim([0,30])
+#ax[0].set_xlim([0,5])
 ax[0].set_title('Firing Rate of P cells')
 
-ax[1].plot(FR_S.t/ms/1000/60, FR_S.smooth_rate(window = 'flat',width=FR_width)/Hz)
-ax[1].set_xlabel('time (min)')
+ax[1].plot(FR_S.t/ms/1000, FR_S.smooth_rate(window = 'flat',width=FR_width)/Hz)
 ax[1].set_ylabel('Freq (Hz)')
-#ax[1].set_ylim([0,200])
+#ax[1].set_xlim([0,5])
 ax[1].set_title('Firing Rate of S cells')
 
-ax[2].plot(FR_B.t/ms/1000/60, FR_B.smooth_rate(window = 'flat',width=FR_width)/Hz)
-ax[2].set_xlabel('time (min)')
+ax[2].plot(FR_B.t/ms/1000, FR_B.smooth_rate(window = 'flat',width=FR_width)/Hz)
+ax[2].set_xlabel('time (sec)')
 ax[2].set_ylabel('Freq (Hz)')
-#ax[2].set_ylim([0,200])
+#ax[2].set_xlim([0,5])
 ax[2].set_title('Firing Rate of B cells')
 
 ax[3].plot(spikes.t/ms,spikes.i,'.',markersize=1)
@@ -182,7 +195,12 @@ fr_P = FR_P.smooth_rate(window = 'flat',width=FR_width)/Hz
 fr_B = FR_B.smooth_rate(window = 'flat',width=FR_width)/Hz
 fr_S = FR_S.smooth_rate(window = 'flat',width=FR_width)/Hz
 time = FR_P.t/ms/1000
-np.savez('fr_test',fr_P=fr_P,fr_S=fr_S,fr_B=fr_B,time=time)
+
+filename = 'fr_230_.12_1.22_plots1'
+if rec_D:
+    np.savez(filename,fr_P=fr_P,fr_S=fr_S,fr_B=fr_B,time=time,D=syn.D)
+else:
+    np.savez(filename,fr_P=fr_P,time=time)
 
 '''
 # compute measures of synchronicity and regularity

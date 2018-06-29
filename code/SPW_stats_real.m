@@ -34,6 +34,8 @@ hold on
 % if th = 5, 115 rejected, from 10 recordings, mostly from 6 main recordings
 % so, extreme values are recording specific and not important!
 
+% mean IEI = 0.965
+
 th = 5;
 IEI(IEI>th) = [];
 histogram(IEI,200,'Normalization','pdf')

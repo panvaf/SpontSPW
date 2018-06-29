@@ -133,21 +133,23 @@ FR_B = PopulationRateMonitor(neurons[N_P+N_S:])
 net = Network(collect())
 net.run(runtime+trec, report = 'text')
 
-fig,ax = plt.subplots(4,1,figsize=(10,15))
-ax[0].plot(FR_P.t/ms/1000/60, FR_P.smooth_rate(window = 'flat',width=FR_width)/Hz)
-ax[0].set_xlabel('time (min)')
+font = {'size'   : 20}
+
+matplotlib.rc('font', **font)
+
+fig,ax = plt.subplots(4,1,figsize=(14,20))
+ax[0].plot(FR_P.t/ms/1000, FR_P.smooth_rate(window = 'flat',width=FR_width)/Hz)
 ax[0].set_ylabel('Freq (Hz)')
 #ax[0].set_ylim([0,30])
 ax[0].set_title('Firing Rate of P cells')
 
-ax[1].plot(FR_S.t/ms/1000/60, FR_S.smooth_rate(window = 'flat',width=FR_width)/Hz)
-ax[1].set_xlabel('time (min)')
+ax[1].plot(FR_S.t/ms/1000, FR_S.smooth_rate(window = 'flat',width=FR_width)/Hz)
 ax[1].set_ylabel('Freq (Hz)')
 #ax[1].set_ylim([0,200])
 ax[1].set_title('Firing Rate of S cells')
 
-ax[2].plot(FR_B.t/ms/1000/60, FR_B.smooth_rate(window = 'flat',width=FR_width)/Hz)
-ax[2].set_xlabel('time (min)')
+ax[2].plot(FR_B.t/ms/1000, FR_B.smooth_rate(window = 'flat',width=FR_width)/Hz)
+ax[2].set_xlabel('time (sec)')
 ax[2].set_ylabel('Freq (Hz)')
 #ax[2].set_ylim([0,200])
 ax[2].set_title('Firing Rate of B cells')
